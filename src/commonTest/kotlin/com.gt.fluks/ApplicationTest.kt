@@ -21,8 +21,10 @@ class ApplicationTest {
     fun dispatchRegisteredEventAndGetUpdatedState() = runTest {
         val initState = AppState(count = 4)
         val app = application(initState) {
-            on("my-event") { state ->
-                AppState(count = state.count * 2)
+            events {
+                on("my-event") { state ->
+                    AppState(count = state.count * 2)
+                }
             }
         }
 

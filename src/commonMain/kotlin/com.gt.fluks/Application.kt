@@ -17,15 +17,25 @@ class ApplicationBuilder<STATE>(
     private val initState: STATE
 ) {
 
-    private val eventHandlers = mutableMapOf<String, EventHandler<STATE>>()
+    private val events = Events<STATE>()
 
     fun build(): Application<STATE> {
-        return ApplicationImpl(initState, eventHandlers)
+        return ApplicationImpl(initState, events.eventHandlers)
     }
+
+    fun events(bloc: Events<STATE>.() -> Unit) {
+        events.bloc()
+    }
+}
+
+class Events<STATE> {
+
+    val eventHandlers = mutableMapOf<String, EventHandler<STATE>>()
 
     fun on(eventKey: String, handler: EventHandler<STATE>) {
         eventHandlers[eventKey] = handler
     }
+
 }
 
 typealias EventHandler<STATE> = (STATE) -> STATE
