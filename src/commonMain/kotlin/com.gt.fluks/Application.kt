@@ -30,10 +30,14 @@ class ApplicationBuilder<STATE>(
 
 class Events<STATE> {
 
-    val eventHandlers = mutableMapOf<String, EventHandler<STATE>>()
+    val eventHandlers = mutableMapOf<String, (STATE, Any) -> STATE>()
 
-    fun on(eventKey: String, handler: EventHandler<STATE>) {
-        eventHandlers[eventKey] = handler
+    fun on(eventKey: String, handler: (STATE) -> STATE) {
+        eventHandlers[eventKey] = { state, _ -> handler(state) }
+    }
+
+    fun <E> on(eventKey: String, handler: (STATE, E) -> STATE) {
+        eventHandlers[eventKey] = handler as (STATE, Any) -> STATE
     }
 
 }
@@ -42,19 +46,19 @@ typealias EventHandler<STATE> = (STATE) -> STATE
 
 interface Application<STATE> {
     val stateStream: StateFlow<STATE>
-    suspend fun dispatch(eventKey: String)
+    suspend fun dispatch(eventKey: String, data: Any? = null)
 }
 
 class ApplicationImpl<STATE>(
     initState: STATE,
-    private val eventHandlers: Map<String, EventHandler<STATE>>
+    private val eventHandlers: Map<String, (STATE, Any) -> STATE>
 ) : Application<STATE> {
     private val _state = MutableStateFlow(initState)
 
     override val stateStream = _state.asStateFlow()
 
-    override suspend fun dispatch(eventKey: String) {
+    override suspend fun dispatch(eventKey: String, data: Any?) {
         val handler = eventHandlers[eventKey] ?: throw Exception("No registered handler for event '$eventKey'")
-        _state.emit(handler(_state.value))
+        _state.emit(handler(_state.value, data ?: {}))
     }
 }

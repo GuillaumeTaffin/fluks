@@ -43,5 +43,21 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun canDispatchAndExpectPayload() = runTest {
+        val initState = AppState(2)
+        val app = application(initState) {
+            events {
+                on<Int>("add-value") { state, event ->
+                    AppState(count = state.count + event)
+                }
+            }
+        }
+
+        app.dispatch("add-value", 3)
+        assertEquals(5, app.stateStream.value.count)
+
+    }
+
     data class AppState(val count: Int)
 }

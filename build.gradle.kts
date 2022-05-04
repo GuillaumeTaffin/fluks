@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform") version "1.6.20"
+    id("maven-publish")
 }
 
 group = "com.gt"
