@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.gt.fluks
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,14 +25,14 @@ class ApplicationTest {
         val initState = AppState(count = 4)
         val app = application(initState) {
             events {
-                on("my-event") { state ->
+                on<String> { state ->
                     AppState(count = state.count * 2)
                 }
             }
         }
 
         assertEquals(initState, app.stateStream.value)
-        app.dispatch("my-event")
+        app.dispatch("string data")
         assertEquals(8, app.stateStream.value.count)
     }
 
@@ -48,16 +51,23 @@ class ApplicationTest {
         val initState = AppState(2)
         val app = application(initState) {
             events {
-                on<Int>("add-value") { state, event ->
+                on<Int> { state, event ->
                     AppState(count = state.count + event)
+                }
+
+                on<Modulo> { state, event ->
+                    state.copy(count = state.count % event.value)
                 }
             }
         }
 
-        app.dispatch("add-value", 3)
+        app.dispatch(3)
         assertEquals(5, app.stateStream.value.count)
 
+        app.dispatch(Modulo(2))
+        assertEquals(1, app.stateStream.value.count)
     }
 
+    data class Modulo(val value: Int)
     data class AppState(val count: Int)
 }

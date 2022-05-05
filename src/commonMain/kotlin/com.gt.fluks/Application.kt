@@ -32,21 +32,20 @@ class Events<STATE> {
 
     val eventHandlers = mutableMapOf<String, (STATE, Any) -> STATE>()
 
-    fun on(eventKey: String, handler: (STATE) -> STATE) {
-        eventHandlers[eventKey] = { state, _ -> handler(state) }
+    inline fun <reified E> on(noinline handler: (STATE) -> STATE) {
+        on<E> { state, _ -> handler(state) }
     }
 
-    fun <E> on(eventKey: String, handler: (STATE, E) -> STATE) {
+    inline fun <reified E> on(noinline handler: (STATE, E) -> STATE) {
+        val eventKey = E::class.simpleName ?: throw Exception("Event class must have a name")
         eventHandlers[eventKey] = handler as (STATE, Any) -> STATE
     }
 
 }
 
-typealias EventHandler<STATE> = (STATE) -> STATE
-
 interface Application<STATE> {
     val stateStream: StateFlow<STATE>
-    suspend fun dispatch(eventKey: String, data: Any? = null)
+    suspend fun dispatch(event: Any)
 }
 
 class ApplicationImpl<STATE>(
@@ -57,8 +56,10 @@ class ApplicationImpl<STATE>(
 
     override val stateStream = _state.asStateFlow()
 
-    override suspend fun dispatch(eventKey: String, data: Any?) {
-        val handler = eventHandlers[eventKey] ?: throw Exception("No registered handler for event '$eventKey'")
-        _state.emit(handler(_state.value, data ?: {}))
+    override suspend fun dispatch(event: Any) {
+        val eventKey = event::class.simpleName
+        val handler = eventHandlers[eventKey]
+            ?: throw Exception("No registered handler for event '$eventKey'")
+        _state.emit(handler(_state.value, event))
     }
 }
